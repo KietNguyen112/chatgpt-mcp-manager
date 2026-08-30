@@ -2387,30 +2387,10 @@ function shutdown(exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
 
-  for (const entry of terminals.values()) {
-    if (!entry.exited) {
-      try {
-        if (process.platform === "win32") {
-          spawnSync("taskkill", ["/F", "/T", "/PID", String(entry.process.pid)], { windowsHide: true });
-        } else {
-          entry.process.kill("SIGTERM");
-        }
-      } catch {}
-    }
-  }
-
-  for (const entry of backgroundProcesses.values()) {
-    if (!entry.exited) {
-      try {
-        if (process.platform === "win32") {
-          spawnSync("taskkill", ["/F", "/T", "/PID", String(entry.process.pid)], { windowsHide: true });
-        } else {
-          entry.process.kill("SIGTERM");
-        }
-      } catch {}
-    }
-  }
-
+  // Terminals and background processes are owned by the persistent runtime daemon.
+  // Do not reference local process maps here: the bridge may be recreated by
+  // supergateway while those processes intentionally survive the transport.
+  // The bridge-owned filesystem child is the only child that must be stopped here.
   if (!child.killed) child.kill();
   const timer = setTimeout(() => {
     if (child.pid && process.platform === "win32") {
