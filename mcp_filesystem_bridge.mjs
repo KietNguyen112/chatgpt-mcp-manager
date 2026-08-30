@@ -3,6 +3,8 @@ import readline from "node:readline";
 import path from "node:path";
 import fs from "node:fs";
 import { runtimeCall, makeRuntimeOwner } from "./mcp_runtime_client.mjs";
+import { enforceCommandPolicy, policyDescription } from "./mcp_policy.mjs";
+import { projectSummary } from "./mcp_agent_context.mjs";
 
 const args = process.argv.slice(2);
 const readOnly = args[0] === "--read-only";
@@ -251,7 +253,35 @@ function getWorkspace() {
     detected_project_type: projectType,
     platform: process.platform,
     read_only: readOnly,
+    policy: policyDescription(),
   }, null, 2);
+}
+
+function getProjectSummary() {
+  return JSON.stringify(projectSummary(activeCwd, policyDescription()), null, 2);
+}
+
+function projectSearch(query, subPath, maxResults = 50, filePattern = "") {
+  return grepSearch(query, subPath, false, false, Math.min(Math.max(1, Number(maxResults) || 50), 200), filePattern);
+}
+
+function verifyWorkspace(subPath) {
+  const root = subPath ? resolveTarget(subPath) : activeCwd;
+  if (!isAllowed(root)) throw new Error("Path is outside allowed directories.");
+  const checks = [];
+  try {
+    const diagnostics = JSON.parse(getDiagnostics(subPath));
+    checks.push({ name: "diagnostics", success: Number(diagnostics.total_errors || 0) === 0, result: diagnostics });
+  } catch (error) { checks.push({ name: "diagnostics", success: false, error: error.message }); }
+  if (!readOnly) {
+    try {
+      const tests = JSON.parse(runTests(subPath));
+      checks.push({ name: "tests", success: Boolean(tests.success), result: tests });
+    } catch (error) { checks.push({ name: "tests", success: false, error: error.message }); }
+  } else {
+    checks.push({ name: "tests", success: null, skipped: true, reason: "Tests are disabled in Read-Only mode." });
+  }
+  return JSON.stringify({ success: checks.every((item) => item.success !== false), cwd: root, checks, git_status: gitStatus(subPath) }, null, 2);
 }
 
 async function setWorkspace(targetPath) {
@@ -1297,6 +1327,21 @@ function resilientEditFile(targetPath, edits, oldTextParam, newTextParam) {
 
 const CUSTOM_TOOLS = [
   {
+    name: "project_summary",
+    description: "Compact coding-agent summary of the current project. Use first when starting work on an unfamiliar repository.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "project_search",
+    description: "Search project code/text and return concise file:line matches. Use this before broad file reads.",
+    inputSchema: { type: "object", properties: { query: { type: "string" }, path: { type: "string" }, max_results: { type: "number" }, file_pattern: { type: "string" } }, required: ["query"] },
+  },
+  {
+    name: "verify",
+    description: "Run diagnostics and, when write-enabled, tests. Use after meaningful edits before claiming completion.",
+    inputSchema: { type: "object", properties: { path: { type: "string" } } },
+  },
+  {
     name: "get_workspace",
     description: "Get full context of the active workspace: root directory, active CWD, project type (Next.js/React/Python/Rust/Go), Git repository status, current branch, and platform.",
     inputSchema: { type: "object", properties: {} },
@@ -1741,7 +1786,7 @@ const ALL_KNOWN_TOOLS = new Set([
   "close_terminal", "list_terminals", "run_tests", "get_diagnostics",
   "delete_file", "delete_directory", "run_command", "apply_patch",
   "git_add", "git_commit", "git_branch", "git_checkout", "git_stash",
-  "git_worktree_list", "git_worktree_create", "git_worktree_remove",
+  "git_worktree_list", "git_worktree_create", "git_worktree_remove", "project_summary", "project_search", "verify",
   "create_checkpoint", "rollback_checkpoint",
 ]);
 
@@ -1802,6 +1847,24 @@ inputLines.on("line", async (line) => {
     const pathError = validateRequestedPaths(toolName, toolArgs);
     if (pathError) {
       process.stdout.write(`${JSON.stringify(result(message.id, pathError, true))}\n`);
+      return;
+    }
+
+    if (toolName === "project_summary") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, getProjectSummary()))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
+      return;
+    }
+
+    if (toolName === "project_search") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, projectSearch(toolArgs.query, toolArgs.path, toolArgs.max_results, toolArgs.file_pattern || "")))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
+      return;
+    }
+
+    if (toolName === "verify") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, verifyWorkspace(toolArgs.path)))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
       return;
     }
 
@@ -2039,6 +2102,11 @@ inputLines.on("line", async (line) => {
         return;
       }
       try {
+        const policyError = enforceCommandPolicy(toolArgs.command);
+        if (policyError) {
+          process.stdout.write(`${JSON.stringify(result(message.id, JSON.stringify({ policy: policyError }), true))}\n`);
+          return;
+        }
         const text = runCommand(toolArgs.command, toolArgs.path, toolArgs.timeout_seconds || 60);
         process.stdout.write(`${JSON.stringify(result(message.id, text))}\n`);
       } catch (error) {
@@ -2067,6 +2135,11 @@ inputLines.on("line", async (line) => {
         return;
       }
       try {
+        const policyError = enforceCommandPolicy(toolArgs.command);
+        if (policyError) {
+          process.stdout.write(`${JSON.stringify(result(message.id, JSON.stringify({ policy: policyError }), true))}\n`);
+          return;
+        }
         const text = await persistentExecTerminal(toolArgs.id, toolArgs.command, toolArgs.timeout_seconds || 60);
         process.stdout.write(`${JSON.stringify(result(message.id, text))}\n`);
       } catch (error) {
@@ -2129,6 +2202,11 @@ inputLines.on("line", async (line) => {
         return;
       }
       try {
+        const policyError = enforceCommandPolicy(toolArgs.command);
+        if (policyError) {
+          process.stdout.write(`${JSON.stringify(result(message.id, JSON.stringify({ policy: policyError }), true))}\n`);
+          return;
+        }
         const text = await persistentStartProcess(toolArgs.command, toolArgs.path);
         process.stdout.write(`${JSON.stringify(result(message.id, text))}\n`);
       } catch (error) {

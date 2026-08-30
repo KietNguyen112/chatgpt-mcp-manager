@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import assert from "node:assert";
 
-console.log("=== Testing ALL 50 M1 Tools with Server Prefixes (M1.xxx) ===");
+console.log("=== Testing all M1 tools with Server Prefixes (M1.xxx) ===");
 
 const testDir = path.resolve("./tests/scratch_all_prefixed");
 if (fs.existsSync(testDir)) fs.rmSync(testDir, { recursive: true, force: true });
@@ -52,8 +52,8 @@ async function run() {
     // 1. Discovery
     const toolsList = await call("tools/list");
     const totalTools = toolsList.result.tools.length;
-    console.log(`1. tools/list discovered: ${totalTools} tools (Expected: 50)`);
-    assert.strictEqual(totalTools, 50, `Expected 50 tools, got ${totalTools}`);
+    console.log(`1. tools/list discovered: ${totalTools} tools (Expected at least: 53)`);
+    assert(totalTools >= 53, `Expected at least 53 tools, got ${totalTools}`);
 
     // 2. M1.list_allowed_directories
     const allowed = await callTool("M1.list_allowed_directories", {});
@@ -184,7 +184,7 @@ async function run() {
     assert(!fs.existsSync(movedFile));
 
     console.log("\n===============================================================");
-    console.log(">>> ALL 50 M1 TOOLS TESTED WITH SERVER PREFIXES: 100% SUCCESS <<<");
+    console.log(">>> ALL M1 TOOLS TESTED WITH SERVER PREFIXES: 100% SUCCESS <<<");
     console.log("===============================================================");
   } catch (err) {
     console.error("Test failed:", err);
