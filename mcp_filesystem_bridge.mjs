@@ -5,6 +5,7 @@ import fs from "node:fs";
 import { runtimeCall, makeRuntimeOwner } from "./mcp_runtime_client.mjs";
 import { enforceCommandPolicy, policyDescription } from "./mcp_policy.mjs";
 import { projectSummary } from "./mcp_agent_context.mjs";
+import { detectProject, verifyProject } from "./mcp_verification_engine.mjs";
 
 const args = process.argv.slice(2);
 const readOnly = args[0] === "--read-only";
@@ -273,20 +274,8 @@ function projectSearch(query, subPath, maxResults = 50, filePattern = "") {
 function verifyWorkspace(subPath) {
   const root = subPath ? resolveTarget(subPath) : activeCwd;
   if (!isAllowed(root)) throw new Error("Path is outside allowed directories.");
-  const checks = [];
-  try {
-    const diagnostics = JSON.parse(getDiagnostics(subPath));
-    checks.push({ name: "diagnostics", success: Number(diagnostics.total_errors || 0) === 0, result: diagnostics });
-  } catch (error) { checks.push({ name: "diagnostics", success: false, error: error.message }); }
-  if (!readOnly) {
-    try {
-      const tests = JSON.parse(runTests(subPath));
-      checks.push({ name: "tests", success: Boolean(tests.success), result: tests });
-    } catch (error) { checks.push({ name: "tests", success: false, error: error.message }); }
-  } else {
-    checks.push({ name: "tests", success: null, skipped: true, reason: "Tests are disabled in Read-Only mode." });
-  }
-  return JSON.stringify({ success: checks.every((item) => item.success !== false), cwd: root, checks, git_status: gitStatus(subPath) }, null, 2);
+  if (readOnly) return JSON.stringify({ success: false, cwd: root, project: detectProject(root), checks: [{ kind: "verification", skipped: true, reason: "Verification execution is disabled in Read-Only mode." }] }, null, 2);
+  return JSON.stringify({ cwd: root, ...verifyProject(root, { includeBuild: false }), git_status: gitStatus(subPath) }, null, 2);
 }
 
 async function setWorkspace(targetPath) {
@@ -1354,8 +1343,8 @@ const CUSTOM_TOOLS = [
   },
   {
     name: "verify",
-    description: "Run diagnostics and, when write-enabled, tests. Use after meaningful edits before claiming completion.",
-    inputSchema: { type: "object", properties: { path: { type: "string" } } },
+    description: "Run unified project verification: auto-detect ecosystem, tests and diagnostics; returns structured checks and summary.",
+    inputSchema: { type: "object", properties: { path: { type: "string" }, command: { type: "string" }, include_build: { type: "boolean" } } },
   },
   {
     name: "agent_state",
@@ -1899,7 +1888,14 @@ inputLines.on("line", async (line) => {
     }
 
     if (toolName === "verify") {
-      try { process.stdout.write(`${JSON.stringify(result(message.id, verifyWorkspace(toolArgs.path)))}\n`); }
+      try {
+        const root = toolArgs.path ? resolveTarget(toolArgs.path) : activeCwd;
+        if (!isAllowed(root)) throw new Error("Path is outside allowed directories.");
+        const verification = readOnly
+          ? { success: false, cwd: root, project: detectProject(root), checks: [{ kind: "verification", skipped: true, reason: "Verification execution is disabled in Read-Only mode." }] }
+          : verifyProject(root, { command: toolArgs.command, includeBuild: Boolean(toolArgs.include_build) });
+        process.stdout.write(`${JSON.stringify(result(message.id, JSON.stringify({ ...verification, git_status: gitStatus(toolArgs.path) }, null, 2)))}\n`);
+      }
       catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
       return;
     }
