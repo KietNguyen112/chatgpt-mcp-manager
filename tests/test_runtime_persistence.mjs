@@ -18,7 +18,7 @@ class BridgeClient {
     this.proc.stdout.on("data", (chunk) => {
       this.buffer += chunk.toString();
       let newline;
-      while ((newline = this.buffer.indexOf("\\n")) >= 0) {
+      while ((newline = this.buffer.indexOf("\n")) >= 0) {
         const line = this.buffer.slice(0, newline).trim();
         this.buffer = this.buffer.slice(newline + 1);
         if (!line) continue;

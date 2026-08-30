@@ -12,8 +12,8 @@ export function detectProject(root) {
     ecosystem: "node",
     package_manager: exists(root, "pnpm-lock.yaml") ? "pnpm" : exists(root, "yarn.lock") ? "yarn" : "npm",
     test: pkg.scripts?.test || ((pkg.devDependencies?.vitest || pkg.dependencies?.vitest) ? "npx vitest run" : (pkg.devDependencies?.jest || pkg.dependencies?.jest) ? "npx jest --runInBand" : null),
-    diagnostics: pkg.scripts?.typecheck ? "npm run typecheck" : pkg.scripts?.lint ? "npm run lint" : null,
-    build: pkg.scripts?.build ? "npm run build" : null,
+    diagnostics: pkg.scripts?.typecheck ? `${exists(root, "pnpm-lock.yaml") ? "pnpm" : exists(root, "yarn.lock") ? "yarn" : "npm run"} ${exists(root, "pnpm-lock.yaml") || exists(root, "yarn.lock") ? "typecheck" : "typecheck"}` : pkg.scripts?.lint ? `${exists(root, "pnpm-lock.yaml") ? "pnpm" : exists(root, "yarn.lock") ? "yarn" : "npm run"} ${exists(root, "pnpm-lock.yaml") || exists(root, "yarn.lock") ? "lint" : "lint"}` : null,
+    build: pkg.scripts?.build ? `${exists(root, "pnpm-lock.yaml") ? "pnpm" : exists(root, "yarn.lock") ? "yarn" : "npm run"} ${exists(root, "pnpm-lock.yaml") || exists(root, "yarn.lock") ? "build" : "build"}` : null,
   };
   if (exists(root, "pyproject.toml") || exists(root, "pytest.ini") || exists(root, "requirements.txt")) return { ecosystem: "python", test: exists(root, "pytest.ini") || exists(root, "tests") ? "pytest" : null, diagnostics: "python -m compileall -q .", build: null };
   if (exists(root, "Cargo.toml")) return { ecosystem: "rust", test: "cargo test", diagnostics: "cargo check", build: "cargo build" };
@@ -37,5 +37,11 @@ export function verifyProject(root, options = {}) {
   if (options.includeDiagnostics !== false && project.diagnostics) checks.push({ kind: "diagnostics", ...execute(project.diagnostics, root, 120000) });
   if (options.includeBuild && project.build) checks.push({ kind: "build", ...execute(project.build, root, 180000) });
   const failed = checks.filter((c) => !c.skipped && c.exit_code !== 0);
-  return { success: failed.length === 0, project, checks, summary: `${checks.filter((c) => !c.skipped && c.exit_code === 0).length} passed, ${failed.length} failed, ${checks.filter((c) => c.skipped).length} skipped` };
+  const diagnosis = failed.map((failure) => ({
+    kind: failure.kind,
+    exit_code: failure.exit_code,
+    timed_out: Boolean(failure.timed_out),
+    first_error: failure.output?.match(/(?:error|failed|failure|traceback)[^\n]*/i)?.[0] || "No structured error line detected; inspect command output.",
+  }));
+  return { success: failed.length === 0, project, checks, diagnosis, summary: `${checks.filter((c) => !c.skipped && c.exit_code === 0).length} passed, ${failed.length} failed, ${checks.filter((c) => c.skipped).length} skipped` };
 }
