@@ -148,8 +148,18 @@ The MCP bridge exposes a coding-oriented tool set:
 
 Terminal and background process state is kept in `mcp_runtime_daemon.mjs`, independent from MCP bridge recreation.
 
+### Agent state / planning
+
+- `agent_state`
+- `update_plan`
+- `remember`
+- `agent_recall`
+
+Agent plan and non-secret task memory are persisted per workspace owner under the ignored `runtime/agent-state/` directory, so MCP bridge recreation does not lose the current coding task state.
+
 ### Verification
 
+- `verify`
 - `run_tests`
 - `get_diagnostics`
 
@@ -172,6 +182,8 @@ Terminal and background process state is kept in `mcp_runtime_daemon.mjs`, indep
 ## Important security model
 
 Full Access shell tools execute with the permissions of the Windows account running this manager. This is **not an OS sandbox**. Use a dedicated low-privilege Windows account or Read-Only mode for untrusted projects.
+
+Command policy classifies normal, network, privileged, and dangerous commands. Network commands can be restricted with `M1_COMMAND_POLICY=ask` or `deny`; privileged/destructive commands require the explicit `M1_ALLOW_DANGEROUS_COMMANDS=1` override when using the default policy.
 
 The OpenAI tunnel itself does not make the local MCP server public. The local server remains on loopback and `tunnel-client` establishes the outbound connection to OpenAI. citehttps://github.com/openai/tunnel-client/blob/master/docs/architecture.md
 

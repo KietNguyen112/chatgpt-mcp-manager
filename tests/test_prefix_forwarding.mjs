@@ -53,14 +53,27 @@ async function run() {
     const toolsList = await call("tools/list");
     const totalTools = toolsList.result.tools.length;
     console.log(`1. tools/list discovered: ${totalTools} tools (Expected at least: 53)`);
-    assert(totalTools >= 53, `Expected at least 53 tools, got ${totalTools}`);
+    assert(totalTools >= 57, `Expected at least 57 tools, got ${totalTools}`);
+    assert(toolsList.result.tools.some((tool) => tool.name === "agent_state"), "agent_state must be registered");
+    assert(toolsList.result.tools.some((tool) => tool.name === "update_plan"), "update_plan must be registered");
+    assert(toolsList.result.tools.some((tool) => tool.name === "remember"), "remember must be registered");
 
     // 2. M1.list_allowed_directories
     const allowed = await callTool("M1.list_allowed_directories", {});
     console.log("2. M1.list_allowed_directories:", allowed);
     assert(allowed.includes(testDir));
 
-    // 3. M1.get_workspace
+    // 3. Agent state tools
+    const plan = JSON.parse(await callTool("M1.update_plan", { steps: ["Inspect", "Implement", "Verify"], currentStep: 2 }));
+    assert.strictEqual(plan.plan[1].status, "in_progress");
+    const memoryMarker = `Persistent agent memory ${Date.now()}`;
+    await callTool("M1.remember", { category: "test", note: memoryMarker });
+    const state = JSON.parse(await callTool("M1.agent_state", {}));
+    const memory = JSON.parse(await callTool("M1.agent_recall", { query: memoryMarker }));
+    assert.strictEqual(memory.count, 1);
+    console.log("3. Agent state: OK");
+
+    // 4. M1.get_workspace
     const ws = JSON.parse(await callTool("M1.get_workspace", {}));
     console.log("3. M1.get_workspace:", ws.detected_project_type);
     assert.strictEqual(ws.workspace_root, testDir);

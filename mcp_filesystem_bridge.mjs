@@ -75,6 +75,11 @@ function buildAgentInstructions() {
     "Use persistent terminals for commands that need shell state, and start_process for long-running servers/watchers.",
     "Inspect diagnostics and run tests after meaningful code changes.",
     "Use Git status/diff before and after changes; use worktrees when isolation is useful.",
+    "Use project_summary before unfamiliar work, then inspect only relevant files.",
+    "For multi-step work, keep a concise plan with update_plan and mark steps completed as verification succeeds.",
+    "Use remember/recall only for durable project/task facts; never store secrets, API keys, or credentials.",
+    "Preferred loop: inspect -> plan -> edit -> targeted verification -> diagnose/fix -> broader tests -> review diff.",
+    "Never stop at a successful edit: verify the behavior or tests that motivated the change.",
     "Never claim a change succeeded until the corresponding tool result confirms it.",
   ];
   if (sections.length) base.push("Repository agent instructions discovered locally:\n" + sections.join("\n\n"));
@@ -908,6 +913,17 @@ async function persistentListTerminals() {
   return runtimeCall("terminal.list", runtimeOwner, {}, 5000);
 }
 
+async function agentState() { return runtimeCall("agent.state", runtimeOwner, {}, 5000); }
+async function agentPlan(steps, currentStep) {
+  if (readOnly) throw new Error("Updating the agent plan is disabled in Read-Only mode.");
+  return runtimeCall("agent.plan", runtimeOwner, { steps, currentStep }, 5000);
+}
+async function agentRemember(note, category) {
+  if (readOnly) throw new Error("Remembering agent state is disabled in Read-Only mode.");
+  return runtimeCall("agent.remember", runtimeOwner, { note, category }, 5000);
+}
+async function agentRecall(query, category) { return runtimeCall("agent.recall", runtimeOwner, { query, category }, 5000); }
+
 // ---- Structured Test Runner & Diagnostics ----
 
 function runTests(subPath, testCommand) {
@@ -1342,6 +1358,16 @@ const CUSTOM_TOOLS = [
     inputSchema: { type: "object", properties: { path: { type: "string" } } },
   },
   {
+    name: "agent_state",
+    description: "Get persistent agent plan and task memory for the current workspace owner.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "agent_recall",
+    description: "Recall durable non-secret project/task notes for this workspace.",
+    inputSchema: { type: "object", properties: { query: { type: "string" }, category: { type: "string" } } },
+  },
+  {
     name: "get_workspace",
     description: "Get full context of the active workspace: root directory, active CWD, project type (Next.js/React/Python/Rust/Go), Git repository status, current branch, and platform.",
     inputSchema: { type: "object", properties: {} },
@@ -1480,6 +1506,16 @@ const CUSTOM_TOOLS = [
 ];
 
 const WRITE_CUSTOM_TOOLS = [
+  {
+    name: "update_plan",
+    description: "Create or update a concise multi-step coding-agent plan. Steps may be strings or {id,title,status,detail}.",
+    inputSchema: { type: "object", properties: { steps: { type: "array" }, currentStep: { type: "number" } }, required: ["steps"] },
+  },
+  {
+    name: "remember",
+    description: "Persist a non-secret project/task fact for later bridge sessions. Never store credentials or API keys.",
+    inputSchema: { type: "object", properties: { note: { type: "string" }, category: { type: "string" } }, required: ["note"] },
+  },
   {
     name: "set_workspace",
     description: "Change the active working directory (CWD) to a subfolder within the allowed workspace. Subsequent relative commands will execute in this CWD.",
@@ -1786,7 +1822,7 @@ const ALL_KNOWN_TOOLS = new Set([
   "close_terminal", "list_terminals", "run_tests", "get_diagnostics",
   "delete_file", "delete_directory", "run_command", "apply_patch",
   "git_add", "git_commit", "git_branch", "git_checkout", "git_stash",
-  "git_worktree_list", "git_worktree_create", "git_worktree_remove", "project_summary", "project_search", "verify",
+  "git_worktree_list", "git_worktree_create", "git_worktree_remove", "project_summary", "project_search", "verify", "agent_state", "agent_recall", "update_plan", "remember",
   "create_checkpoint", "rollback_checkpoint",
 ]);
 
@@ -1864,6 +1900,27 @@ inputLines.on("line", async (line) => {
 
     if (toolName === "verify") {
       try { process.stdout.write(`${JSON.stringify(result(message.id, verifyWorkspace(toolArgs.path)))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
+      return;
+    }
+
+    if (toolName === "agent_state") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, await agentState()))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
+      return;
+    }
+    if (toolName === "agent_recall") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, await agentRecall(toolArgs.query || "", toolArgs.category || "")))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
+      return;
+    }
+    if (toolName === "update_plan") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, await agentPlan(toolArgs.steps || [], toolArgs.currentStep)))}\n`); }
+      catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
+      return;
+    }
+    if (toolName === "remember") {
+      try { process.stdout.write(`${JSON.stringify(result(message.id, await agentRemember(toolArgs.note, toolArgs.category)))}\n`); }
       catch (error) { process.stdout.write(`${JSON.stringify(result(message.id, error.message, true))}\n`); }
       return;
     }

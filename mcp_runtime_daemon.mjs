@@ -3,6 +3,7 @@ import net from "node:net";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { RUNTIME_ENDPOINT } from "./mcp_runtime_common.mjs";
+import { getAgentState, updatePlan, remember, recall, clearAgentState } from "./mcp_agent_state.mjs";
 
 const MAX_OUTPUT_LINES = 2000;
 const FINISHED_RETENTION_MS = Number(process.env.M1_RUNTIME_FINISHED_RETENTION_MS || 30 * 60 * 1000);
@@ -370,6 +371,11 @@ async function dispatch(action, owner, params) {
       workspaceCwds.set(owner, params.cwd);
       return params.cwd;
     }
+    case "agent.state": return JSON.stringify(getAgentState(owner), null, 2);
+    case "agent.plan": return updatePlan(owner, params.steps || [], params.currentStep);
+    case "agent.remember": return remember(owner, params.note, params.category);
+    case "agent.recall": return recall(owner, params.query, params.category);
+    case "agent.clear": return clearAgentState(owner);
     case "process.start": return startBackground(owner, params);
     case "process.read": return readBackground(owner, params);
     case "process.input": return inputBackground(owner, params);

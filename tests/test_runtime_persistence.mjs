@@ -18,7 +18,7 @@ class BridgeClient {
     this.proc.stdout.on("data", (chunk) => {
       this.buffer += chunk.toString();
       let newline;
-      while ((newline = this.buffer.indexOf("\n")) >= 0) {
+      while ((newline = this.buffer.indexOf("\\n")) >= 0) {
         const line = this.buffer.slice(0, newline).trim();
         this.buffer = this.buffer.slice(newline + 1);
         if (!line) continue;
@@ -121,6 +121,20 @@ async function run() {
     const workspace = JSON.parse(await bridgeB.tool("get_workspace"));
     assert.strictEqual(workspace.active_cwd, nestedDir, "set_workspace must survive bridge recreation");
 
+    const plan = JSON.parse(await bridgeB.tool("update_plan", { steps: [
+      { id: 1, title: "Inspect repository", status: "completed" },
+      { id: 2, title: "Implement change", status: "in_progress" },
+      { id: 3, title: "Run verification", status: "pending" },
+    ] }));
+    assert.strictEqual(plan.plan[1].status, "in_progress", "agent plan must be persisted");
+    const memoryMarker = `Runtime state marker ${Date.now()}`;
+    await bridgeB.tool("remember", { category: "architecture", note: memoryMarker });
+    console.log("2a. Agent plan + memory persisted.");
+
+    const persistedState = JSON.parse(await bridgeB.tool("agent_state", {}));
+    assert.strictEqual(persistedState.plan[1].title, "Implement change", "agent plan must survive bridge recreation");
+    const recalled = JSON.parse(await bridgeB.tool("agent_recall", { query: memoryMarker }));
+    assert.strictEqual(recalled.count, 1, "agent memory must survive bridge recreation");
     const persisted = await bridgeB.tool("exec_terminal", { id: terminalId, command: commands.get });
     assert(persisted.includes("PERSISTED=YES"), "terminal environment must survive bridge recreation");
     console.log("2. Terminal + workspace state survived bridge recreation.");
