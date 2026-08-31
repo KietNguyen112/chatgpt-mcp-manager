@@ -2,6 +2,12 @@
 
 Windows desktop manager for turning a local project into a **ChatGPT Web coding MCP** through the official OpenAI Secure MCP Tunnel.
 
+## Video Tutorial
+
+[![ChatGPT MCP Manager Video Tutorial](https://img.youtube.com/vi/KAEetkQ1978/maxresdefault.jpg)](https://www.youtube.com/watch?v=KAEetkQ1978)
+
+> 🎬 **[Watch Step-by-Step Video Tutorial on YouTube](https://www.youtube.com/watch?v=KAEetkQ1978)**
+
 ## Architecture
 
 ```text
@@ -78,6 +84,8 @@ The app also accepts `tunnel-client.exe` from `PATH`.
 OpenAI documents that ChatGPT connects to remote MCP servers and that a private/local MCP server should use Secure MCP Tunnel. Full MCP write/modify support is currently rolling out for Business and Enterprise/Edu; Pro support is more limited. [OpenAI Support Article](https://help.openai.com/en/articles/12584461)
 
 ## First run
+
+> 💡 **Prefer a video walkthrough?** Watch the [Step-by-Step Video Tutorial on YouTube](https://www.youtube.com/watch?v=KAEetkQ1978).
 
 ### Option A: 1-Click Launch (Windows)
 Double-click `run.bat` in the project root directory.
