@@ -2,3 +2,29 @@ __pycache__/
 *.py[cod]
 runtime/
 tests/__pycache__/
+
+# Environment & Secrets
+.env
+.env.*
+*.env
+config.json
+*.key
+*.pem
+*.crt
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs & Temporary Files
+*.log
+*.tmp
+
