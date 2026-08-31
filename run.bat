@@ -1,7 +1,7 @@
 @echo off
-title Gemini Spark MCP Manager
+title ChatGPT MCP Manager
 cd /d "%~dp0"
-echo Starting Gemini Spark MCP Manager...
+echo Starting ChatGPT MCP Manager...
 python main.py
 if errorlevel 1 (
     echo.
