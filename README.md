@@ -79,23 +79,25 @@ OpenAI documents that ChatGPT connects to remote MCP servers and that a private/
 
 ## First run
 
-Start the manager:
+### Option A: 1-Click Launch (Windows)
+Double-click `run.bat` in the project root directory.
 
+### Option B: Command Line
 ```powershell
 python -m pip install -r requirements.txt
 python main.py
 ```
 
-In the UI:
+### In the UI:
 
 1. Add one or more project folders.
 2. Choose **Full Access** for coding, or **Read-Only** for inspection.
-3. Enter the OpenAI `tunnel_id`.
-4. Enter the Runtime API key. It is encrypted with Windows DPAPI in the local runtime config.
+3. Enter your OpenAI `tunnel_id` (see FAQ below if you need one).
+4. Enter the Runtime API key. It is encrypted securely using Windows DPAPI in your local runtime config.
 5. Keep alias `chatgpt-mcp-manager` unless you need multiple runtimes.
-6. Start the tunnel.
+6. Click **Start MCP Tunnel**.
 7. Wait for **ONLINE**.
-8. In ChatGPT, select the same Tunnel connector.
+8. In ChatGPT Web, select the same Tunnel connector.
 
 The displayed `tunnel://...` value is an identifier for the OpenAI tunnel, **not a public HTTP endpoint**. The actual MCP endpoint remains loopback-only.
 
@@ -206,6 +208,19 @@ node tests/test_path_security.mjs
 ```
 
 Read-Only is enforced at two boundaries: the public gateway filters and rejects mutating calls, and the bridge independently rejects mutating `tools/call` requests before forwarding them to the underlying filesystem MCP server. This prevents a client from bypassing Read-Only merely by naming a hidden write tool directly.
+
+## FAQ / How to obtain OpenAI Tunnel credentials
+
+### 1. How do I get an OpenAI `tunnel_id`?
+1. Go to [OpenAI Platform Dashboard](https://platform.openai.com/).
+2. Navigate to **Platform Tunnels / MCP Settings** in your organization or workspace settings.
+3. Click **Create Tunnel** and copy the generated Tunnel ID (formatted like `tunnel_0123456789abcdef...`).
+
+### 2. How do I get a Runtime API Key?
+1. In the OpenAI Platform Dashboard, go to **API Keys**.
+2. Create a new Service or Restricted API key.
+3. Ensure the key has permissions for **Tunnels Read + Use** (or `Tunnels Admin`).
+4. Paste this key into the app UI. The key is encrypted locally using Windows DPAPI and never logged in plain text.
 
 ## Native tunnel-client diagnostics
 
