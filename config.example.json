@@ -7,5 +7,5 @@
   "access_mode": "Toàn quyền (Full Access)",
   "tunnel_engine": "OpenAI Secure MCP Tunnel",
   "openai_tunnel_id": "tunnel_0123456789abcdef0123456789abcdef",
-  "openai_alias": "mcp-manager-gpt"
+  "openai_alias": "chatgpt-mcp-manager"
 }

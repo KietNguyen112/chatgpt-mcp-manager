@@ -1,4 +1,4 @@
-# MCP Manager GPT — OpenAI Secure MCP Tunnel
+# ChatGPT MCP Manager — OpenAI Secure MCP Tunnel
 
 Windows desktop manager for turning a local project into a **ChatGPT Web coding MCP** through the official OpenAI Secure MCP Tunnel.
 
@@ -60,7 +60,7 @@ OpenAI provides the supported tunnel-client download through Platform Tunnels ma
 Place the official binary here:
 
 ```text
-mcp-manager-gpt/
+chatgpt-mcp-manager/
 └── bin/
     └── tunnel-client.exe
 ```
@@ -92,7 +92,7 @@ In the UI:
 2. Choose **Full Access** for coding, or **Read-Only** for inspection.
 3. Enter the OpenAI `tunnel_id`.
 4. Enter the Runtime API key. It is encrypted with Windows DPAPI in the local runtime config.
-5. Keep alias `mcp-manager-gpt` unless you need multiple runtimes.
+5. Keep alias `chatgpt-mcp-manager` unless you need multiple runtimes.
 6. Start the tunnel.
 7. Wait for **ONLINE**.
 8. In ChatGPT, select the same Tunnel connector.
@@ -215,7 +215,7 @@ If the manager cannot connect, first run the official binary directly:
 .\bin\tunnel-client.exe help quickstart
 .\bin\tunnel-client.exe help doctor
 .\bin\tunnel-client.exe runtimes list
-.\bin\tunnel-client.exe runtimes status mcp-manager-gpt --json
+.\bin\tunnel-client.exe runtimes status chatgpt-mcp-manager --json
 ```
 
 OpenAI recommends checking `/readyz`/runtime readiness and using the native runtime status rather than treating a launched process as proof that the tunnel is usable. citehttps://github.com/openai/tunnel-client/blob/master/docs/end-user-guide.md
@@ -223,7 +223,7 @@ OpenAI recommends checking `/readyz`/runtime readiness and using the native runt
 ## Project layout
 
 ```text
-mcp-manager-gpt/
+chatgpt-mcp-manager/
 ├── main.py
 ├── mcp_service.py
 ├── mcp_proxy.py

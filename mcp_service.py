@@ -48,7 +48,7 @@ class MCPTunnelService:
         self.access_key = ""
         self.openai_tunnel_id = ""
         self.openai_runtime_api_key = ""
-        self.openai_alias = "mcp-manager-gpt"
+        self.openai_alias = "chatgpt-mcp-manager"
         self._lock = threading.RLock()
         self._supervisor_thread: threading.Thread | None = None
         self._recent_logs: deque[str] = deque(maxlen=100)
@@ -177,7 +177,7 @@ class MCPTunnelService:
 
     def _download_latest_tunnel_client_locked(self) -> str:
         api_url = "https://api.github.com/repos/openai/tunnel-client/releases/latest"
-        request = urllib.request.Request(api_url, headers={"Accept": "application/vnd.github+json", "User-Agent": "mcp-manager-gpt"})
+        request = urllib.request.Request(api_url, headers={"Accept": "application/vnd.github+json", "User-Agent": "chatgpt-mcp-manager"})
         with urllib.request.urlopen(request, timeout=30) as response:
             release = json.load(response)
         tag = str(release.get("tag_name") or "").strip()
@@ -215,7 +215,7 @@ class MCPTunnelService:
                     continue
                 archive = os.path.join(temp_dir, "candidate.zip")
                 try:
-                    request = urllib.request.Request(download_url, headers={"User-Agent": "mcp-manager-gpt"})
+                    request = urllib.request.Request(download_url, headers={"User-Agent": "chatgpt-mcp-manager"})
                     with urllib.request.urlopen(request, timeout=60) as response, open(archive, "wb") as handle:
                         shutil.copyfileobj(response, handle)
                     with zipfile.ZipFile(archive) as zf:
@@ -273,7 +273,7 @@ class MCPTunnelService:
         access_key: str = "",
         openai_tunnel_id: str = "",
         openai_runtime_api_key: str = "",
-        openai_alias: str = "mcp-manager-gpt",
+        openai_alias: str = "chatgpt-mcp-manager",
     ) -> bool:
         with self._lock:
             if self.running:
@@ -298,7 +298,7 @@ class MCPTunnelService:
             self.tunnel_type = tunnel_type
             self.openai_tunnel_id = openai_tunnel_id.strip()
             self.openai_runtime_api_key = openai_runtime_api_key.strip()
-            self.openai_alias = re.sub(r"[^A-Za-z0-9._-]", "-", openai_alias.strip()) or "mcp-manager-gpt"
+            self.openai_alias = re.sub(r"[^A-Za-z0-9._-]", "-", openai_alias.strip()) or "chatgpt-mcp-manager"
             self.access_key = re.sub(r"[^A-Za-z0-9_-]", "", access_key.strip())
             needs_gateway = bool(self.read_only)
             # OpenAI Secure MCP Tunnel provides the external authentication boundary.

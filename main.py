@@ -84,7 +84,7 @@ class MCPManagerApp(ctk.CTk):
         self.openai_runtime_key_entry = ctk.CTkEntry(tunnel, placeholder_text="Lưu bằng Windows DPAPI", show="*", height=32)
         self.openai_runtime_key_entry.grid(row=2, column=1, padx=(0, 15), pady=(0, 10), sticky="ew")
         ctk.CTkLabel(tunnel, text="Runtime alias:").grid(row=3, column=0, padx=(15, 10), pady=(0, 10), sticky="w")
-        self.openai_alias_entry = ctk.CTkEntry(tunnel, placeholder_text="mcp-manager-gpt", height=32)
+        self.openai_alias_entry = ctk.CTkEntry(tunnel, placeholder_text="chatgpt-mcp-manager", height=32)
         self.openai_alias_entry.grid(row=3, column=1, padx=(0, 15), pady=(0, 10), sticky="ew")
         lifecycle = ctk.CTkFrame(tunnel, fg_color="transparent")
         lifecycle.grid(row=4, column=0, columnspan=2, padx=15, pady=(0, 12), sticky="ew")
@@ -142,7 +142,7 @@ class MCPManagerApp(ctk.CTk):
     def load_config(self):
         if not os.path.exists(self.config_file):
             self.folder_list.insert(tk.END, os.path.abspath(os.getcwd()))
-            self._set_entry(self.openai_alias_entry, "mcp-manager-gpt")
+            self._set_entry(self.openai_alias_entry, "chatgpt-mcp-manager")
             return
         try:
             with open(self.config_file, "r", encoding="utf-8") as handle:
@@ -157,11 +157,11 @@ class MCPManagerApp(ctk.CTk):
             self.mode_segmented.set(READ_ONLY if "Read-Only" in old_mode else FULL_ACCESS)
             self._set_entry(self.openai_tunnel_id_entry, cfg.get("openai_tunnel_id", ""))
             self._set_entry(self.openai_runtime_key_entry, decrypt(cfg.get("openai_runtime_api_key_encrypted", "")))
-            self._set_entry(self.openai_alias_entry, cfg.get("openai_alias", "mcp-manager-gpt"))
+            self._set_entry(self.openai_alias_entry, cfg.get("openai_alias", "chatgpt-mcp-manager"))
             self.save_config()
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             self.async_log(f"Không thể đọc cấu hình: {exc}")
-            self._set_entry(self.openai_alias_entry, "mcp-manager-gpt")
+            self._set_entry(self.openai_alias_entry, "chatgpt-mcp-manager")
 
     @staticmethod
     def _set_entry(entry, value):
@@ -177,7 +177,7 @@ class MCPManagerApp(ctk.CTk):
             "access_mode": self.mode_segmented.get(),
             "tunnel_engine": OPENAI_SECURE,
             "openai_tunnel_id": self.openai_tunnel_id_entry.get().strip(),
-            "openai_alias": self.openai_alias_entry.get().strip() or "mcp-manager-gpt",
+            "openai_alias": self.openai_alias_entry.get().strip() or "chatgpt-mcp-manager",
         }
         encrypted_openai_key = encrypt(self.openai_runtime_key_entry.get().strip())
         if encrypted_openai_key:
@@ -274,7 +274,7 @@ class MCPManagerApp(ctk.CTk):
             "tunnel_type": "openai_secure",
             "openai_tunnel_id": tunnel_id,
             "openai_runtime_api_key": runtime_key,
-            "openai_alias": self.openai_alias_entry.get().strip() or "mcp-manager-gpt",
+            "openai_alias": self.openai_alias_entry.get().strip() or "chatgpt-mcp-manager",
         }
         threading.Thread(target=self._start_service, args=(settings,), daemon=True).start()
 
