@@ -576,5 +576,185 @@ class MCPManagerApp(ctk.CTk):
         self.destroy()
 
 
+def _product_create_widgets(self):
+    """Modern product UI shell; intentionally preserves all existing callbacks/state fields."""
+    self.grid_columnconfigure(0, weight=0)
+    self.grid_columnconfigure(1, weight=1)
+    self.grid_rowconfigure(0, weight=1)
+
+    self.sidebar = ctk.CTkFrame(self, width=218, corner_radius=0, fg_color="#11131b")
+    self.sidebar.grid(row=0, column=0, sticky="nsew")
+    self.sidebar.grid_propagate(False)
+
+    brand = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+    brand.pack(fill="x", padx=20, pady=(26, 28))
+    ctk.CTkLabel(brand, text="M", width=38, height=38, corner_radius=11,
+                 fg_color="#2563eb", text_color="white",
+                 font=ctk.CTkFont(size=19, weight="bold")).pack(side="left")
+    brand_text = ctk.CTkFrame(brand, fg_color="transparent")
+    brand_text.pack(side="left", padx=10)
+    ctk.CTkLabel(brand_text, text="MCP Manager", anchor="w",
+                 font=ctk.CTkFont(size=15, weight="bold"), text_color="#f8fafc").pack(anchor="w")
+    ctk.CTkLabel(brand_text, text="LOCAL RUNTIME", anchor="w",
+                 font=ctk.CTkFont(size=9, weight="bold"), text_color="#64748b").pack(anchor="w", pady=(1, 0))
+
+    ctk.CTkLabel(self.sidebar, text="WORKSPACE", anchor="w",
+                 font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b").pack(fill="x", padx=22, pady=(0, 8))
+    self.nav_workspace = ctk.CTkButton(self.sidebar, text="  ●  Project & Tunnel", anchor="w", height=40,
+                                       corner_radius=9, fg_color="#1e293b", hover_color="#263449",
+                                       text_color="#f8fafc", font=ctk.CTkFont(size=12, weight="bold"))
+    self.nav_workspace.pack(fill="x", padx=12, pady=(0, 5))
+    self.nav_logs = ctk.CTkButton(self.sidebar, text="  ≡  Activity & Logs", anchor="w", height=40,
+                                 corner_radius=9, fg_color="transparent", hover_color="#1b2230",
+                                 text_color="#94a3b8", font=ctk.CTkFont(size=12), command=lambda: self.log_textbox.focus_set())
+    self.nav_logs.pack(fill="x", padx=12)
+
+    bottom = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+    bottom.pack(side="bottom", fill="x", padx=16, pady=18)
+    self.lang_lbl = ctk.CTkLabel(bottom, text=self.t("language"), anchor="w",
+                                 font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b")
+    self.lang_lbl.pack(anchor="w", pady=(0, 6))
+    self.lang_option = ctk.CTkOptionMenu(bottom, values=["English", "Tiếng Việt"],
+                                         command=self._on_language_change, width=180, height=34,
+                                         fg_color="#1b2230", button_color="#273449", button_hover_color="#334155")
+    self.lang_option.set("English")
+    self.lang_option.pack(fill="x")
+    ctk.CTkLabel(bottom, text="Secure MCP Tunnel • Local-first", anchor="w",
+                 font=ctk.CTkFont(size=9), text_color="#475569").pack(anchor="w", pady=(12, 0))
+
+    self.content = ctk.CTkScrollableFrame(self, corner_radius=0, fg_color="#0b0e14",
+                                          scrollbar_button_color="#263142", scrollbar_button_hover_color="#334155")
+    self.content.grid(row=0, column=1, sticky="nsew")
+    self.content.grid_columnconfigure(0, weight=1)
+
+    header = ctk.CTkFrame(self.content, fg_color="transparent")
+    header.grid(row=0, column=0, padx=30, pady=(28, 20), sticky="ew")
+    header.grid_columnconfigure(0, weight=1)
+    self.header_title_label = ctk.CTkLabel(header, text=self.t("title"), anchor="w",
+                                           font=ctk.CTkFont(size=29, weight="bold"), text_color="#f8fafc")
+    self.header_title_label.grid(row=0, column=0, sticky="w")
+    self.header_subtitle_label = ctk.CTkLabel(header, text=self.t("subtitle"), anchor="w",
+                                              font=ctk.CTkFont(size=12), text_color="#7f8ca3")
+    self.header_subtitle_label.grid(row=1, column=0, pady=(5, 0), sticky="w")
+    self.status_badge = ctk.CTkLabel(header, text=self.t("offline"), width=112, height=30, corner_radius=15,
+                                     fg_color="#21161d", text_color="#fb7185",
+                                     font=ctk.CTkFont(size=10, weight="bold"))
+    self.status_badge.grid(row=0, column=1, rowspan=2, padx=(20, 0), sticky="e")
+
+    status = ctk.CTkFrame(self.content, corner_radius=16, fg_color="#151a24", border_width=1, border_color="#232c3c")
+    status.grid(row=1, column=0, padx=30, pady=(0, 14), sticky="ew")
+    status.grid_columnconfigure(0, weight=1)
+    self.action_btn = ctk.CTkButton(status, text=self.t("start_tunnel"), height=46, width=190,
+                                    corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
+                                    fg_color="#10b981", hover_color="#059669", command=self.toggle_service)
+    self.action_btn.grid(row=0, column=1, padx=18, pady=16, sticky="e")
+    self.openai_tunnel_url_lbl = ctk.CTkLabel(status, text=self.t("openai_tunnel_label"), anchor="w",
+                                              font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b")
+    self.openai_tunnel_url_lbl.grid(row=0, column=0, padx=18, pady=(12, 0), sticky="sw")
+    self.url_entry = ctk.CTkEntry(status, placeholder_text=self.t("url_placeholder"), height=38,
+                                  font=ctk.CTkFont(family="Consolas", size=12), text_color="#60a5fa",
+                                  fg_color="#0d1119", border_color="#283449")
+    self.url_entry.grid(row=1, column=0, padx=18, pady=(3, 16), sticky="ew")
+    self.copy_btn = ctk.CTkButton(status, text=self.t("copy_id"), width=190, height=38,
+                                  corner_radius=9, fg_color="#273449", hover_color="#334155", command=self.copy_url)
+    self.copy_btn.grid(row=1, column=1, padx=18, pady=(3, 16))
+
+    config = ctk.CTkFrame(self.content, corner_radius=16, fg_color="#151a24", border_width=1, border_color="#232c3c")
+    config.grid(row=2, column=0, padx=30, pady=14, sticky="ew")
+    config.grid_columnconfigure(0, weight=1)
+    ctk.CTkLabel(config, text="PROJECT CONFIGURATION", anchor="w", text_color="#64748b",
+                 font=ctk.CTkFont(size=10, weight="bold")).grid(row=0, column=0, padx=20, pady=(18, 3), sticky="w")
+    self.folder_label = ctk.CTkLabel(config, text=self.t("project_folders") + ":", anchor="w",
+                                     font=ctk.CTkFont(size=14, weight="bold"), text_color="#e2e8f0")
+    self.folder_label.grid(row=1, column=0, padx=20, pady=(0, 8), sticky="w")
+    folder_row = ctk.CTkFrame(config, fg_color="transparent")
+    folder_row.grid(row=2, column=0, padx=20, sticky="ew")
+    folder_row.grid_columnconfigure(0, weight=1)
+    self.folder_list = tk.Listbox(folder_row, height=4, bg="#0d1119", fg="#cbd5e1",
+                                  selectbackground="#1d4ed8", selectforeground="#ffffff",
+                                  borderwidth=0, highlightthickness=1, highlightbackground="#283449",
+                                  highlightcolor="#3b82f6", relief="flat", activestyle="none")
+    self.folder_list.grid(row=0, column=0, sticky="ew")
+    folder_buttons = ctk.CTkFrame(folder_row, fg_color="transparent")
+    folder_buttons.grid(row=0, column=1, padx=(12, 0), sticky="ns")
+    self.add_folder_btn = ctk.CTkButton(folder_buttons, text=self.t("add_folder"), width=145, height=34,
+                                        corner_radius=8, command=self.browse_folder)
+    self.add_folder_btn.pack(pady=(0, 7))
+    self.remove_folder_btn = ctk.CTkButton(folder_buttons, text=self.t("remove_selected"), width=145, height=32,
+                                           corner_radius=8, fg_color="#273449", hover_color="#334155", command=self.remove_folder)
+    self.remove_folder_btn.pack()
+
+    options = ctk.CTkFrame(config, fg_color="#10151f", corner_radius=11)
+    options.grid(row=3, column=0, padx=20, pady=16, sticky="ew")
+    self.perm_label = ctk.CTkLabel(options, text=self.t("permissions"), text_color="#94a3b8",
+                                   font=ctk.CTkFont(size=11, weight="bold"))
+    self.perm_label.pack(side="left", padx=(14, 8), pady=12)
+    self.mode_segmented = ctk.CTkSegmentedButton(options, values=[self.t("full_access"), self.t("read_only")],
+                                                 font=ctk.CTkFont(size=11, weight="bold"), height=34)
+    self.mode_segmented.set(self.t("full_access"))
+    self.mode_segmented.pack(side="left", pady=8)
+    self.port_label = ctk.CTkLabel(options, text=self.t("port"), text_color="#94a3b8",
+                                   font=ctk.CTkFont(size=11, weight="bold"))
+    self.port_label.pack(side="left", padx=(28, 7))
+    self.port_entry = ctk.CTkEntry(options, width=82, height=34, fg_color="#0b0f17", border_color="#283449")
+    self.port_entry.insert(0, "3000")
+    self.port_entry.pack(side="left")
+
+    tunnel = ctk.CTkFrame(config, corner_radius=12, fg_color="#10151f", border_width=1, border_color="#263246")
+    tunnel.grid(row=4, column=0, padx=20, pady=(0, 18), sticky="ew")
+    tunnel.grid_columnconfigure(1, weight=1)
+    self.tunnel_lbl = ctk.CTkLabel(tunnel, text=self.t("tunnel"), font=ctk.CTkFont(size=13, weight="bold"), text_color="#e2e8f0")
+    self.tunnel_lbl.grid(row=0, column=0, padx=15, pady=14, sticky="w")
+    ctk.CTkLabel(tunnel, text="●  " + OPENAI_SECURE, text_color="#60a5fa",
+                 font=ctk.CTkFont(size=12, weight="bold")).grid(row=0, column=1, padx=15, pady=14, sticky="w")
+    self.openai_tunnel_id_lbl = ctk.CTkLabel(tunnel, text=self.t("openai_tunnel_id"), text_color="#94a3b8")
+    self.openai_tunnel_id_lbl.grid(row=1, column=0, padx=15, pady=(0, 9), sticky="w")
+    self.openai_tunnel_id_entry = ctk.CTkEntry(tunnel, placeholder_text=self.t("tunnel_placeholder"), height=34)
+    self.openai_tunnel_id_entry.grid(row=1, column=1, padx=(0, 15), pady=(0, 9), sticky="ew")
+    self.openai_runtime_key_lbl = ctk.CTkLabel(tunnel, text=self.t("runtime_api_key"), text_color="#94a3b8")
+    self.openai_runtime_key_lbl.grid(row=2, column=0, padx=15, pady=(0, 9), sticky="w")
+    self.openai_runtime_key_entry = ctk.CTkEntry(tunnel, placeholder_text=self.t("key_placeholder"), show="*", height=34)
+    self.openai_runtime_key_entry.grid(row=2, column=1, padx=(0, 15), pady=(0, 9), sticky="ew")
+    self.openai_alias_lbl = ctk.CTkLabel(tunnel, text=self.t("runtime_alias"), text_color="#94a3b8")
+    self.openai_alias_lbl.grid(row=3, column=0, padx=15, pady=(0, 9), sticky="w")
+    self.openai_alias_entry = ctk.CTkEntry(tunnel, placeholder_text=self.t("alias_placeholder"), height=34)
+    self.openai_alias_entry.grid(row=3, column=1, padx=(0, 15), pady=(0, 9), sticky="ew")
+    lifecycle = ctk.CTkFrame(tunnel, fg_color="transparent")
+    lifecycle.grid(row=4, column=0, columnspan=2, padx=15, pady=(3, 9), sticky="ew")
+    for index in range(5):
+        lifecycle.grid_columnconfigure(index, weight=1)
+    self.install_tunnel_btn = ctk.CTkButton(lifecycle, text=self.t("install_client"), height=32, corner_radius=7, command=self.install_tunnel_client)
+    self.install_tunnel_btn.grid(row=0, column=0, padx=(0, 5), sticky="ew")
+    self.update_tunnel_btn = ctk.CTkButton(lifecycle, text=self.t("update_client"), height=32, corner_radius=7, fg_color="#273449", hover_color="#334155", command=self.update_tunnel_client)
+    self.update_tunnel_btn.grid(row=0, column=1, padx=3, sticky="ew")
+    self.doctor_btn = ctk.CTkButton(lifecycle, text=self.t("doctor"), height=32, corner_radius=7, fg_color="#273449", hover_color="#334155", command=self.run_tunnel_doctor)
+    self.doctor_btn.grid(row=0, column=2, padx=3, sticky="ew")
+    self.status_btn = ctk.CTkButton(lifecycle, text=self.t("status"), height=32, corner_radius=7, fg_color="#273449", hover_color="#334155", command=self.refresh_tunnel_status)
+    self.status_btn.grid(row=0, column=3, padx=3, sticky="ew")
+    self.open_ui_btn = ctk.CTkButton(lifecycle, text=self.t("open_ui"), height=32, corner_radius=7, fg_color="#273449", hover_color="#334155", command=self.open_tunnel_ui)
+    self.open_ui_btn.grid(row=0, column=4, padx=(5, 0), sticky="ew")
+    self.tunnel_version_label = ctk.CTkLabel(tunnel, text=self.t("client_not_installed"), text_color="#64748b", anchor="w")
+    self.tunnel_version_label.grid(row=5, column=0, columnspan=2, padx=15, pady=(0, 11), sticky="ew")
+
+    logs = ctk.CTkFrame(self.content, corner_radius=16, fg_color="#151a24", border_width=1, border_color="#232c3c")
+    logs.grid(row=3, column=0, padx=30, pady=(14, 30), sticky="ew")
+    logs.grid_columnconfigure(0, weight=1)
+    log_header = ctk.CTkFrame(logs, fg_color="transparent")
+    log_header.grid(row=0, column=0, padx=18, pady=(15, 9), sticky="ew")
+    self.log_header_label = ctk.CTkLabel(log_header, text=self.t("activity_logs"), anchor="w",
+                                         font=ctk.CTkFont(size=13, weight="bold"), text_color="#e2e8f0")
+    self.log_header_label.pack(side="left")
+    self.open_log_btn = ctk.CTkButton(log_header, text=self.t("open_log_file"), width=120, height=28, corner_radius=7, command=self.open_log_file)
+    self.open_log_btn.pack(side="right", padx=(6, 0))
+    self.clear_log_btn = ctk.CTkButton(log_header, text=self.t("clear_screen"), width=110, height=28, corner_radius=7, fg_color="#273449", hover_color="#334155", command=self.clear_logs)
+    self.clear_log_btn.pack(side="right")
+    self.log_textbox = ctk.CTkTextbox(logs, height=220, font=ctk.CTkFont(family="Consolas", size=11),
+                                      fg_color="#090c12", text_color="#9fe6c5", border_width=1, border_color="#202a3a", wrap="none")
+    self.log_textbox.grid(row=1, column=0, padx=18, pady=(0, 18), sticky="ew")
+
+
+# Keep the established business logic intact; only the view constructor is replaced.
+MCPManagerApp._create_widgets = _product_create_widgets
+
 if __name__ == "__main__":
     MCPManagerApp().mainloop()

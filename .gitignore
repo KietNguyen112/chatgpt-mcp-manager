@@ -27,4 +27,5 @@ env/
 # Logs & Temporary Files
 *.log
 *.tmp
+bin/*.old
 
